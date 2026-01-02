@@ -7,19 +7,19 @@ struct MainTabView: View {
             HomeView()
                 .tabItem {
                     Image(systemName: "house.fill")
-                    Text("Home111")
+                    Text("Home")
                 }
             
             DictionaryView()
                 .tabItem {
                     Image(systemName: "book.fill")
-                    Text("Dictionary222")
+                    Text("Dictionary")
                 }
             
             MenuView()
                 .tabItem {
                     Image(systemName: "gearshape.fill")
-                    Text("Menu333")
+                    Text("Menu")
                 }
         }
     }
