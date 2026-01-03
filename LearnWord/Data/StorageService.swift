@@ -151,4 +151,28 @@ final class StorageService {
         )
         return (try? context.count(for: request)) ?? 0
     }
+    
+    // MARK: - Daily Progress
+
+    private var todayKey: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = formatter.string(from: Date())
+        return "learnedToday_\(today)"
+    }
+    
+    func incrementLearnedToday() {
+        let current = UserDefaults.standard.integer(forKey: todayKey)
+        UserDefaults.standard.set(current + 1, forKey: todayKey)
+    }
+    
+    func learnedTodayCount() -> Int {
+        UserDefaults.standard.integer(forKey: todayKey)
+    }
+
+    func todayProgress() -> Double {
+        let count = learnedTodayCount()
+        return min(Double(count) / 20.0, 1.0)
+    }
+
 }

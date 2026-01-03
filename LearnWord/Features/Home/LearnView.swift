@@ -5,10 +5,24 @@ struct LearnView: View {
     @State private var words: [WordEntity] = []
     @State private var currentIndex = 0
     @State private var showTranslation = false
+    @State private var offset: CGSize = .zero
+    @State private var isFrontEnglish = true
+    @State private var studiedToday = 0
 
     var body: some View {
         VStack {
             if !words.isEmpty {
+
+                // 👇 ВОТ СЮДА
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Сегодня: \(studiedToday) из 20")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+
+                    ProgressView(value: Double(studiedToday), total: 20)
+                }
+                .padding(.bottom)
+
                 wordCard()
                 actionButtons()
             } else {
@@ -22,6 +36,7 @@ struct LearnView: View {
         }
     }
 
+
     // MARK: - UI
 
     private func wordCard() -> some View {
@@ -32,22 +47,43 @@ struct LearnView: View {
                 .font(.system(size: 32, weight: .bold))
                 .multilineTextAlignment(.center)
                 .padding()
-                .onTapGesture {
-                    showTranslation.toggle()
-                }
 
-            Text("Нажми, чтобы перевернуть")
+            Text("Нажми на карточку")
                 .font(.caption)
                 .foregroundColor(.gray)
 
             Spacer()
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, minHeight: 420)
         .background(
             RoundedRectangle(cornerRadius: 24)
-                .fill(Color(.systemBackground))
+                .fill(Color(.secondarySystemBackground))
                 .shadow(radius: 6)
         )
+        .offset(offset)
+        .rotationEffect(.degrees(Double(offset.width / 20)))
+        .gesture(
+            DragGesture()
+                .onChanged { gesture in
+                    offset = gesture.translation
+                }
+                .onEnded { _ in
+                    handleSwipe()
+                }
+        )
+        .onTapGesture {
+            showTranslation.toggle()
+        }
+        .animation(.spring(), value: offset)
+    }
+    
+    private func handleSwipe() {
+        if offset.width > 120 {
+            rightAction()
+        } else if offset.width < -120 {
+            leftAction()
+        }
+        offset = .zero
     }
 
     private func actionButtons() -> some View {
@@ -92,11 +128,16 @@ struct LearnView: View {
 
     private var displayedText: String {
         if showTranslation {
-            return currentWord.russian ?? ""
+            return isFrontEnglish
+                ? (currentWord.russian ?? "")
+                : (currentWord.english ?? "")
         } else {
-            return currentWord.english ?? ""
+            return isFrontEnglish
+                ? (currentWord.english ?? "")
+                : (currentWord.russian ?? "")
         }
     }
+
 
     private var leftButtonTitle: String {
         currentWord.status == WordStatus.new.rawValue
@@ -114,9 +155,12 @@ struct LearnView: View {
         let word = currentWord
 
         if word.status == WordStatus.new.rawValue {
+            // Уже знала — НЕ считаем в план
             StorageService.shared.markWord(word, status: .known)
         } else {
+            // Реально выучила — СЧИТАЕМ
             StorageService.shared.markWord(word, status: .learned)
+            StorageService.shared.incrementLearnedToday()
         }
 
         replaceCurrentWord()
@@ -127,10 +171,12 @@ struct LearnView: View {
 
         if word.status == WordStatus.new.rawValue {
             StorageService.shared.markWord(word, status: .learning)
+            studiedToday += 1   // 👈 И ЗДЕСЬ
         }
 
         moveWordToEnd()
     }
+
 
     private func replaceCurrentWord() {
         words.remove(at: currentIndex)
@@ -150,8 +196,11 @@ struct LearnView: View {
 
     private func resetIndex() {
         showTranslation = false
+        isFrontEnglish = Bool.random()
+
         if currentIndex >= words.count {
             currentIndex = 0
         }
     }
+
 }

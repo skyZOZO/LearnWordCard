@@ -41,6 +41,9 @@ struct HomeView: View {
                 .padding()
             }
             .navigationTitle("Home")
+            .onAppear {
+                reloadStats()
+            }
         }
     }
     
@@ -90,10 +93,10 @@ struct HomeView: View {
     
     private func reloadStats() {
         let storage = StorageService.shared
-        
-        learnedCount = storage.totalLearnedWords()
-        todayWords = storage.activeTodayWordsCount()
-        
+
+        learnedCount = storage.learnedTodayCount()
+        todayWords = Int(storage.todayProgress() * 100)
+
         if let firstDate = storage.firstWordDate() {
             daysLearning = Calendar.current.dateComponents(
                 [.day],
