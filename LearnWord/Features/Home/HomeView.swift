@@ -4,7 +4,8 @@ struct HomeView: View {
     @State private var learnedCount = 0
     @State private var daysLearning = 0
     @State private var todayWords = 0
-    
+    @AppStorage("learnedTodayShared") private var learnedTodayShared = 0
+
     var body: some View {
         NavigationView {
             ScrollView {
@@ -43,22 +44,45 @@ struct HomeView: View {
             .navigationTitle("Home")
             .onAppear {
                 reloadStats()
+            }.onChange(of: learnedTodayShared) { _ in
+                reloadStats()
             }
+
         }
     }
     
     
     private func statsBlock() -> some View {
-        HStack(spacing: 16) {
-            statItem(value: "\(daysLearning)", title: "дней учусь")
-            statItem(value: "\(learnedCount)", title: "выучено")
-            statItem(value: "\(todayWords)", title: "в обучении")
+        HStack(spacing: 20) {
+
+            ProgressCircle(
+                progress: min(Double(learnedCount) / 20.0, 1.0),
+                text: "\(learnedCount)/20"
+            )
+
+            VStack(alignment: .leading, spacing: 12) {
+                statLine(title: "В обучении", value: "\(todayWords)")
+                statLine(title: "Дней учусь", value: "\(daysLearning)")
+            }
         }
         .padding()
         .background(Color(.secondarySystemBackground))
         .cornerRadius(20)
     }
     
+    private func statLine(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(.gray)
+
+            Spacer()
+
+            Text(value)
+                .font(.headline)
+        }
+    }
+
     private func statItem(value: String, title: String) -> some View {
         VStack {
             Text(value)
@@ -94,9 +118,13 @@ struct HomeView: View {
     private func reloadStats() {
         let storage = StorageService.shared
 
+        // 1. Сколько выучено сегодня (для круга)
         learnedCount = storage.learnedTodayCount()
-        todayWords = Int(storage.todayProgress() * 100)
 
+        // 2. Сколько в обучении (ещё показать)
+        todayWords = storage.learningWordsCount()
+
+        // 3. Сколько дней учусь
         if let firstDate = storage.firstWordDate() {
             daysLearning = Calendar.current.dateComponents(
                 [.day],
@@ -105,6 +133,34 @@ struct HomeView: View {
             ).day ?? 0
         } else {
             daysLearning = 0
+        }
+    }
+
+    struct ProgressCircle: View {
+        let progress: Double   // 0.0 ... 1.0
+        let text: String
+
+        var body: some View {
+            ZStack {
+                Circle()
+                    .stroke(Color.blue.opacity(0.2), lineWidth: 10)
+
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(
+                        Color.blue,
+                        style: StrokeStyle(
+                            lineWidth: 10,
+                            lineCap: .round
+                        )
+                    )
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeOut, value: progress)
+
+                Text(text)
+                    .font(.headline)
+            }
+            .frame(width: 90, height: 90)
         }
     }
 }

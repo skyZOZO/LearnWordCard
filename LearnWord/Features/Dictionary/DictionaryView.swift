@@ -2,50 +2,45 @@ import SwiftUI
 
 struct DictionaryView: View {
 
-    @State private var english = ""
-    @State private var russian = ""
-    @State private var showAlert = false
-
     var body: some View {
-        NavigationView {
-            Form {
-
-                Section(header: Text("Новое слово")) {
-                    TextField("English", text: $english)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-
-                    TextField("Russian", text: $russian)
+        NavigationStack {
+            List {
+                NavigationLink("📘 Мои слова") {
+                    WordListView(
+                        title: "Мои слова",
+                        filter: .all
+                    )
                 }
 
-                Section {
-                    Button {
-                        addWord()
-                    } label: {
-                        Text("Добавить слово")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .disabled(english.isEmpty || russian.isEmpty)
+                NavigationLink("🆕 Новые") {
+                    WordListView(
+                        title: "Новые слова",
+                        filter: .new
+                    )
+                }
+
+                NavigationLink("📖 В обучении") {
+                    WordListView(
+                        title: "В обучении",
+                        filter: .learning
+                    )
+                }
+
+                NavigationLink("🧠 Запомнила") {
+                    WordListView(
+                        title: "Запомнила",
+                        filter: .learned
+                    )
+                }
+
+                NavigationLink("✅ Уже знаю") {
+                    WordListView(
+                        title: "Уже знаю",
+                        filter: .known
+                    )
                 }
             }
-            .navigationTitle("Dictionary")
-            .alert("Слово добавлено ✅", isPresented: $showAlert) {
-                Button("OK", role: .cancel) {}
-            }
+            .navigationTitle("Словарь")
         }
-    }
-
-    // MARK: - Logic
-
-    private func addWord() {
-        StorageService.shared.addWord(
-            english: english.trimmingCharacters(in: .whitespaces),
-            russian: russian.trimmingCharacters(in: .whitespaces),
-            status: WordStatus.new.rawValue
-        )
-
-        english = ""
-        russian = ""
-        showAlert = true
     }
 }

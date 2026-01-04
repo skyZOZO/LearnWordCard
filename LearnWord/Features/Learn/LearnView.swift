@@ -12,17 +12,6 @@ struct LearnView: View {
     var body: some View {
         VStack {
             if !words.isEmpty {
-
-                // 👇 ВОТ СЮДА
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Сегодня: \(studiedToday) из 20")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-
-                    ProgressView(value: Double(studiedToday), total: 20)
-                }
-                .padding(.bottom)
-
                 wordCard()
                 actionButtons()
             } else {

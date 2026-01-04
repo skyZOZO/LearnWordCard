@@ -142,13 +142,13 @@ final class StorageService {
         return try? context.fetch(request).first?.createdAt
     }
 
-    func activeTodayWordsCount() -> Int {
+    func learningWordsCount() -> Int {
         let request: NSFetchRequest<WordEntity> = WordEntity.fetchRequest()
         request.predicate = NSPredicate(
-            format: "status == %d OR status == %d",
-            WordStatus.new.rawValue,
+            format: "status == %d",
             WordStatus.learning.rawValue
         )
+
         return (try? context.count(for: request)) ?? 0
     }
     
@@ -163,9 +163,12 @@ final class StorageService {
     
     func incrementLearnedToday() {
         let current = UserDefaults.standard.integer(forKey: todayKey)
-        UserDefaults.standard.set(current + 1, forKey: todayKey)
+        let newValue = current + 1
+        UserDefaults.standard.set(newValue, forKey: todayKey)
+
+        UserDefaults.standard.set(newValue, forKey: "learnedTodayShared")
     }
-    
+
     func learnedTodayCount() -> Int {
         UserDefaults.standard.integer(forKey: todayKey)
     }
@@ -173,6 +176,72 @@ final class StorageService {
     func todayProgress() -> Double {
         let count = learnedTodayCount()
         return min(Double(count) / 20.0, 1.0)
+    }
+
+    func fetchLearningWords(limit: Int = 6) -> [WordEntity] {
+        let request: NSFetchRequest<WordEntity> = WordEntity.fetchRequest()
+        request.predicate = NSPredicate(
+            format: "status == %d",
+            WordStatus.learning.rawValue
+        )
+        request.fetchLimit = limit
+        return (try? context.fetch(request)) ?? []
+    }
+    
+    // MARK: - Dictionary ✅
+
+    func fetchAllWords() -> [WordEntity] {
+        let request: NSFetchRequest<WordEntity> = WordEntity.fetchRequest()
+        request.sortDescriptors = [
+            NSSortDescriptor(key: "createdAt", ascending: false)
+        ]
+
+        return (try? context.fetch(request)) ?? []
+    }
+
+    func delete(_ word: WordEntity) {
+        context.delete(word)
+        save()
+    }
+
+    func update(_ word: WordEntity, status: WordStatus) {
+        word.status = status.rawValue
+        save()
+    }
+    
+    func countWords(for filter: WordFilter) -> Int {
+        let request: NSFetchRequest<WordEntity> = WordEntity.fetchRequest()
+
+        switch filter {
+        case .all:
+            return (try? context.count(for: request)) ?? 0
+
+        case .new:
+            request.predicate = NSPredicate(
+                format: "status == %d",
+                WordStatus.new.rawValue
+            )
+
+        case .learning:
+            request.predicate = NSPredicate(
+                format: "status == %d",
+                WordStatus.learning.rawValue
+            )
+
+        case .learned:
+            request.predicate = NSPredicate(
+                format: "status == %d",
+                WordStatus.learned.rawValue
+            )
+
+        case .known:
+            request.predicate = NSPredicate(
+                format: "status == %d",
+                WordStatus.known.rawValue
+            )
+        }
+
+        return (try? context.count(for: request)) ?? 0
     }
 
 }
