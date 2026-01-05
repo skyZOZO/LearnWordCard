@@ -41,7 +41,7 @@ struct HomeView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Home")
+            .navigationTitle("Учить карточки📝")
             .onAppear {
                 reloadStats()
             }.onChange(of: learnedTodayShared) { _ in
@@ -125,15 +125,8 @@ struct HomeView: View {
         todayWords = storage.learningWordsCount()
 
         // 3. Сколько дней учусь
-        if let firstDate = storage.firstWordDate() {
-            daysLearning = Calendar.current.dateComponents(
-                [.day],
-                from: firstDate,
-                to: Date()
-            ).day ?? 0
-        } else {
-            daysLearning = 0
-        }
+        daysLearning = storage.streakCount
+
     }
 
     struct ProgressCircle: View {

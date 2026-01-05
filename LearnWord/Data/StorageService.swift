@@ -165,9 +165,12 @@ final class StorageService {
         let current = UserDefaults.standard.integer(forKey: todayKey)
         let newValue = current + 1
         UserDefaults.standard.set(newValue, forKey: todayKey)
-
         UserDefaults.standard.set(newValue, forKey: "learnedTodayShared")
+
+        // обновляем streak
+        recordLearningToday()
     }
+
 
     func learnedTodayCount() -> Int {
         UserDefaults.standard.integer(forKey: todayKey)
@@ -192,12 +195,9 @@ final class StorageService {
 
     func fetchAllWords() -> [WordEntity] {
         let request: NSFetchRequest<WordEntity> = WordEntity.fetchRequest()
-        request.sortDescriptors = [
-            NSSortDescriptor(key: "createdAt", ascending: false)
-        ]
-
         return (try? context.fetch(request)) ?? []
     }
+
 
     func delete(_ word: WordEntity) {
         context.delete(word)
@@ -244,4 +244,46 @@ final class StorageService {
         return (try? context.count(for: request)) ?? 0
     }
 
+}
+extension StorageService {
+
+    private var streakKey: String { "streakCount" }
+    private var lastLearnedDateKey: String { "lastLearnedDate" }
+
+    var streakCount: Int {
+        UserDefaults.standard.integer(forKey: streakKey)
+    }
+
+    private var lastLearnedDate: Date? {
+        UserDefaults.standard.object(forKey: lastLearnedDateKey) as? Date
+    }
+
+    /// Вызываем, когда пользователь учит слово
+    func recordLearningToday() {
+        let today = Calendar.current.startOfDay(for: Date())
+
+        if let lastDate = lastLearnedDate {
+            let lastDay = Calendar.current.startOfDay(for: lastDate)
+
+            if Calendar.current.isDate(today, inSameDayAs: lastDay) {
+                // Уже записан сегодня, ничего не меняем
+                return
+            }
+
+            let diff = Calendar.current.dateComponents([.day], from: lastDay, to: today).day ?? 0
+
+            if diff == 1 {
+                // Продолжаем серию
+                UserDefaults.standard.set(streakCount + 1, forKey: streakKey)
+            } else {
+                // Пропущен день — сброс
+                UserDefaults.standard.set(1, forKey: streakKey)
+            }
+        } else {
+            // Первый день обучения
+            UserDefaults.standard.set(1, forKey: streakKey)
+        }
+
+        UserDefaults.standard.set(today, forKey: lastLearnedDateKey)
+    }
 }

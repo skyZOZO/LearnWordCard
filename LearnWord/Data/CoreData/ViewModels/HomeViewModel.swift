@@ -41,7 +41,9 @@ final class HomeViewModel: ObservableObject {
 
     func markAsLearned() {
         updateCurrentWord(status: .learned)
+        StorageService.shared.recordLearningToday() // <-- добавляем
     }
+
 
     private func updateCurrentWord(status: WordStatus) {
         guard let word = currentWord else { return }
